@@ -1,0 +1,55 @@
+{
+  "FundMe1.sol": {
+    "__sources__": {
+      "FundMe1.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.18;\r\n\r\n",
+        "file": "FundMe1.sol"
+      }
+    }
+  },
+  "FallbackExample.sol": {
+    "__sources__": {
+      "FallbackExample.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.18;\r\n\r\ncontract FallbackExample {\r\n    uint256 public result;\r\n\r\n    // Fallback function must be declared as external.\r\n    fallback() external payable {\r\n        result = 1;\r\n    }\r\n\r\n    receive() external payable {\r\n        result = 2;\r\n    }\r\n}\r\n\r\n// Explainer from: https://solidity-by-example.org/fallback/\r\n// Ether is sent to contract\r\n//      is msg.data empty?\r\n//          /   \\\r\n//         yes  no\r\n//         /     \\\r\n//    receive()?  fallback()\r\n//     /   \\\r\n//   yes   no\r\n//  /        \\\r\n//receive()  fallback()",
+        "file": "FallbackExample.sol"
+      }
+    }
+  },
+  "SafeMathTester.sol": {
+    "__sources__": {
+      "SafeMathTester.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.6.0;\r\n\r\ncontract SafeMathTester{\r\n\r\n    uint8 public bigNumber = 255; // checked\r\n    \r\n    function add() public{\r\n        bigNumber = bigNumber + 1;\r\n    }\r\n}",
+        "file": "SafeMathTester.sol"
+      }
+    }
+  },
+  "FallBackExample.sol": {
+    "__sources__": {
+      "FallBackExample.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.18;\r\n\r\ncontract FallbackExample {\r\n    uint256 public result;\r\n\r\n    // Fallback function must be declared as external.\r\n    fallback() external payable {\r\n        result = 1;\r\n    }\r\n\r\n    receive() external payable {\r\n        result = 2;\r\n    }\r\n}\r\n\r\n// Explainer from: https://solidity-by-example.org/fallback/\r\n// Ether is sent to contract\r\n//      is msg.data empty?\r\n//          /   \\\r\n//         yes  no\r\n//         /     \\\r\n//    receive()?  fallback()\r\n//     /   \\\r\n//   yes   no\r\n//  /        \\\r\n//receive()  fallback()",
+        "file": "FallBackExample.sol"
+      }
+    }
+  },
+  "FundMe.sol": {
+    "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol": ".deps/npm/@chainlink/contracts@1.5.0/src/v0.8/shared/interfaces/AggregatorV3Interface.sol",
+    "./PriceConverter.sol": "PriceConverter.sol",
+    "__sources__": {
+      "FundMe.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.18;\r\n\r\nimport {AggregatorV3Interface} from \"@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol\";\r\nimport {PriceConverter} from \"./PriceConverter.sol\";\r\n\r\nerror NotOwner();\r\n\r\ncontract FundMe {\r\n    using PriceConverter for uint256;\r\n\r\n    mapping(address => uint256) public addressToAmountFunded;\r\n    address[] public funders;\r\n\r\n    // Could we make this constant?  /* hint: no! We should make it immutable! */\r\n    address public /* immutable */ i_owner;\r\n    uint256 public constant MINIMUM_USD = 5 * 10 ** 18;\r\n\r\n    constructor() {\r\n        i_owner = msg.sender;\r\n    }\r\n\r\n    function fund() public payable {\r\n        require(msg.value.getConversionRate() >= MINIMUM_USD, \"You need to spend more ETH!\");\r\n        // require(PriceConverter.getConversionRate(msg.value) >= MINIMUM_USD, \"You need to spend more ETH!\");\r\n        addressToAmountFunded[msg.sender] += msg.value;\r\n        funders.push(msg.sender);\r\n    }\r\n\r\n    function getVersion() public view returns (uint256) {\r\n        AggregatorV3Interface priceFeed = AggregatorV3Interface(0x694AA1769357215DE4FAC081bf1f309aDC325306);\r\n        return priceFeed.version();\r\n    }\r\n\r\n    modifier onlyOwner() {\r\n        // require(msg.sender == owner);\r\n        if (msg.sender != i_owner) revert NotOwner();\r\n        _;\r\n    }\r\n\r\n    function withdraw() public onlyOwner {\r\n        for (uint256 funderIndex = 0; funderIndex < funders.length; funderIndex++) {\r\n            address funder = funders[funderIndex];\r\n            addressToAmountFunded[funder] = 0;\r\n        }\r\n        funders = new address[](0);\r\n        // // transfer\r\n        // payable(msg.sender).transfer(address(this).balance);\r\n\r\n        // // send\r\n        // bool sendSuccess = payable(msg.sender).send(address(this).balance);\r\n        // require(sendSuccess, \"Send failed\");\r\n\r\n        // call\r\n        (bool callSuccess,) = payable(msg.sender).call{value: address(this).balance}(\"\");\r\n        require(callSuccess, \"Call failed\");\r\n    }\r\n    // Explainer from: https://solidity-by-example.org/fallback/\r\n    // Ether is sent to contract\r\n    //      is msg.data empty?\r\n    //          /   \\\r\n    //         yes  no\r\n    //         /     \\\r\n    //    receive()?  fallback()\r\n    //     /   \\\r\n    //   yes   no\r\n    //  /        \\\r\n    //receive()  fallback()\r\n\r\n    fallback() external payable {\r\n        fund();\r\n    }\r\n\r\n    receive() external payable {\r\n        fund();\r\n    }\r\n}\r\n\r\n// Concepts we didn't cover yet (will cover in later sections)\r\n// 1. Enum\r\n// 2. Events\r\n// 3. Try / Catch\r\n// 4. Function Selector\r\n// 5. abi.encode / decode\r\n// 6. Hash with keccak256\r\n// 7. Yul / Assembly",
+        "file": "FundMe.sol"
+      },
+      "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\n// solhint-disable-next-line interface-starts-with-i\ninterface AggregatorV3Interface {\n  function decimals() external view returns (uint8);\n\n  function description() external view returns (string memory);\n\n  function version() external view returns (uint256);\n\n  function getRoundData(\n    uint80 _roundId\n  ) external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);\n\n  function latestRoundData()\n    external\n    view\n    returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);\n}\n",
+        "file": "@chainlink/contracts@1.5.0/src/v0.8/shared/interfaces/AggregatorV3Interface.sol"
+      },
+      "PriceConverter.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\n\r\npragma solidity ^0.8.19;\r\n\r\nimport {AggregatorV3Interface} from \"@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol\";\r\n\r\n\r\nlibrary PriceConverter {\r\n        function getPrice() internal  view returns (uint256){\r\n        // Address 0x694AA1769357215DE4FAC081bf1f309aDC325306\r\n        // ABI \r\n        AggregatorV3Interface priceFeed = AggregatorV3Interface(0x694AA1769357215DE4FAC081bf1f309aDC325306);\r\n         (,int256 price,,, ) = priceFeed.latestRoundData();\r\n         // price of ETH in terms of USD\r\n         // 2000.00000000\r\n         return uint256(price * 1e10);\r\n    }\r\n    function getConversionRate(uint256 ethAmount) internal view returns (uint256){\r\n        //msg.value.getConversionRate()\r\n        uint256 ethPrice = getPrice();\r\n        uint256 ethAmountInUsd = (ethPrice * ethAmount) / 1e18;\r\n        return ethAmountInUsd;\r\n    }\r\n\r\n    function getVersion() internal view returns (uint256){\r\n       return AggregatorV3Interface(0x694AA1769357215DE4FAC081bf1f309aDC325306).version();\r\n    }\r\n}",
+        "file": "PriceConverter.sol"
+      }
+    }
+  },
+  "PriceConverter.sol": {
+    "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol": ".deps/npm/@chainlink/contracts@1.5.0/src/v0.8/shared/interfaces/AggregatorV3Interface.sol"
+  }
+}
